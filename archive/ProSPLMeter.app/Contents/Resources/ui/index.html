@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProSPL Meter</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Bar: Device, Status, Quick Actions -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M17 5v14M7 9v6M22 8v8M2 11v2"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>ProSPL <span>METER</span></h1>
+          <span class="subtext">IEC 61672-1 CLASS 1 SPEC</span>
+        </div>
+      </div>
+
+      <div class="device-selectors">
+        <div class="control-group">
+          <label for="deviceSelect">INPUT DEVICE</label>
+          <select id="deviceSelect" class="select-input"></select>
+        </div>
+
+        <div class="control-group">
+          <label for="channelSelect">CHANNEL</label>
+          <select id="channelSelect" class="select-input">
+            <option value="0">Channel 1 (Left)</option>
+            <option value="1">Channel 2 (Right)</option>
+            <option value="-1">Mono Sum (All)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <!-- Offset Quick Display -->
+        <button id="btnOpenCal" class="pill-btn" title="Open Microphone & Reference Calibration">
+          <span class="pill-label">OFFSET</span>
+          <span id="topOffsetVal" class="pill-value">+100.0 dB</span>
+        </button>
+
+        <!-- Mic Profile Status -->
+        <button id="btnOpenMicCal" class="pill-btn" title="Microphone Frequency Calibration">
+          <span class="pill-label">MIC CAL</span>
+          <span id="topMicStatus" class="pill-value status-dim">NONE</span>
+        </button>
+
+        <!-- Color Thresholds -->
+        <button id="btnOpenThresholds" class="icon-btn" title="Color Ranges & Thresholds">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+
+        <!-- CSV Logging Quick Bar -->
+        <button id="btnToggleLogging" class="record-btn" title="Start/Stop CSV Logging">
+          <span class="rec-dot"></span>
+          <span id="recText">REC CSV</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <!-- Left / Top Column: Big Master Display & Big Live C - A -->
+      <section class="hero-meters">
+        <!-- Master Primary SPL Tile -->
+        <div class="meter-card master-card" id="cardMaster">
+          <div class="card-header">
+            <div class="metric-selector-wrapper">
+              <label for="masterMetricSelect">PRIMARY DISPLAY</label>
+              <select id="masterMetricSelect" class="metric-select">
+                <option value="LAS" selected>L_AS (A-Weight Slow)</option>
+                <option value="LAF">L_AF (A-Weight Fast)</option>
+                <option value="LAeq">L_Aeq (Equivalent Continuous)</option>
+                <option value="LCS">L_CS (C-Weight Slow)</option>
+                <option value="LCF">L_CF (C-Weight Fast)</option>
+                <option value="LCeq">L_Ceq (C-Weight Leq)</option>
+                <option value="LZS">L_ZS (Z-Weight Flat Slow)</option>
+                <option value="LZeq">L_Zeq (Z-Weight Flat Leq)</option>
+                <option value="CminusA">C - A (Live Low-End Delta)</option>
+              </select>
+            </div>
+            <div class="badge-row">
+              <span class="badge" id="masterSpeedBadge">SLOW</span>
+              <span class="badge badge-unit" id="masterUnitBadge">dBA</span>
+            </div>
+          </div>
+
+          <div class="digital-display" id="masterDisplay">
+            <span class="number" id="masterNum">--.-</span>
+            <span class="unit" id="masterUnit">dB</span>
+          </div>
+
+          <!-- Color Bar Indicator -->
+          <div class="level-bar-track">
+            <div class="level-bar-fill" id="masterBarFill"></div>
+            <div class="bar-markers">
+              <span style="left: 0%">40</span>
+              <span style="left: 25%">60</span>
+              <span style="left: 56%">85</span>
+              <span style="left: 69%">95</span>
+              <span style="left: 81%">105</span>
+              <span style="left: 100%">120</span>
+            </div>
+          </div>
+
+          <div class="card-footer-stats">
+            <div class="stat-item">
+              <span class="stat-lbl">MAX</span>
+              <span class="stat-val" id="masterMax">--.-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">MIN</span>
+              <span class="stat-val" id="masterMin">--.-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">LEQ WINDOW</span>
+              <span class="stat-val" id="masterLeqTime">1s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dedicated LIVE C MINUS A Tile (User's Key Feature) -->
+        <div class="meter-card c-minus-a-card" id="cardCminusA">
+          <div class="card-header">
+            <div class="title-group">
+              <span class="card-title">LIVE C &minus; A</span>
+              <span class="tagline">SUB-BASS & LF BALANCE DELTA</span>
+            </div>
+            <div class="badge-row">
+              <button id="btnToggleCASpeed" class="badge-btn" title="Toggle Slow or Fast C-A">
+                <span id="caSpeedLabel">SLOW (Lcs - Las)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="digital-display ca-display" id="caDisplay">
+            <span class="number" id="caNum">--.-</span>
+            <span class="unit">dB</span>
+          </div>
+
+          <!-- Visual LF Balance Gauge -->
+          <div class="ca-balance-container">
+            <div class="ca-balance-track">
+              <div class="ca-indicator" id="caIndicator"></div>
+            </div>
+            <div class="ca-zone-labels">
+              <span>LEAN &lt;4</span>
+              <span>BALANCED 4-12</span>
+              <span>HEAVY BASS 12-18</span>
+              <span>EXCESSIVE &gt;18</span>
+            </div>
+          </div>
+
+          <div class="ca-status-bar">
+            <span class="ca-desc" id="caDescription">Awaiting audio...</span>
+            <span class="ca-subtext">C-weight retains sub energy while A rolls off LF</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Multi-Measurement Matrix -->
+      <section class="matrix-section">
+        <div class="section-header">
+          <h2>SIMULTANEOUS MEASUREMENTS</h2>
+          <div class="leq-controls">
+            <label for="leqWindowSelect">LEQ WINDOW:</label>
+            <select id="leqWindowSelect" class="select-input select-compact">
+              <option value="1">1 Second (Rolling)</option>
+              <option value="5">5 Seconds</option>
+              <option value="10">10 Seconds</option>
+              <option value="60">1 Minute</option>
+              <option value="300">5 Minutes</option>
+              <option value="900">15 Minutes</option>
+              <option value="0">Cumulative (Total)</option>
+            </select>
+            <button id="btnResetStats" class="btn-sm" title="Reset Leq, Peak, Min/Max">RESET STATS</button>
+          </div>
+        </div>
+
+        <div class="matrix-grid">
+          <!-- A-Weighting Column -->
+          <div class="matrix-card" id="colA">
+            <div class="matrix-col-header">
+              <span class="col-title">A-WEIGHTED (dBA)</span>
+              <span class="col-sub">IEC Human Ear Response</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">FAST (125ms)</span>
+              <span class="row-value" id="valLAF">--.-</span>
+            </div>
+            <div class="metric-row highlight">
+              <span class="row-label">SLOW (1000ms)</span>
+              <span class="row-value" id="valLAS">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Aeq</span>
+              <span class="row-value" id="valLAeq">--.-</span>
+            </div>
+            <div class="metric-row sub-row">
+              <span class="row-label">MAX / MIN</span>
+              <span class="row-value-dual">
+                <span id="valLAmax">--.-</span> / <span id="valLAmin">--.-</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- C-Weighting Column -->
+          <div class="matrix-card" id="colC">
+            <div class="matrix-col-header">
+              <span class="col-title">C-WEIGHTED (dBC)</span>
+              <span class="col-sub">Flat Mid/High + Low End</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">FAST (125ms)</span>
+              <span class="row-value" id="valLCF">--.-</span>
+            </div>
+            <div class="metric-row highlight">
+              <span class="row-label">SLOW (1000ms)</span>
+              <span class="row-value" id="valLCS">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Ceq</span>
+              <span class="row-value" id="valLCeq">--.-</span>
+            </div>
+            <div class="metric-row sub-row">
+              <span class="row-label">PEAK (LCpk)</span>
+              <span class="row-value" id="valLCpeak">--.-</span>
+            </div>
+          </div>
+
+          <!-- Z-Weighting Column -->
+          <div class="matrix-card" id="colZ">
+            <div class="matrix-col-header">
+              <span class="col-title">Z-WEIGHTED (dBZ)</span>
+              <span class="col-sub">Flat 10Hz - 20kHz Linear</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">FAST (125ms)</span>
+              <span class="row-value" id="valLZF">--.-</span>
+            </div>
+            <div class="metric-row highlight">
+              <span class="row-label">SLOW (1000ms)</span>
+              <span class="row-value" id="valLZS">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Zeq</span>
+              <span class="row-value" id="valLZeq">--.-</span>
+            </div>
+            <div class="metric-row sub-row">
+              <span class="row-label">PEAK (LZpk)</span>
+              <span class="row-value" id="valLZpeak">--.-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Visual Section: Real-Time Strip Chart & 1/3 Octave RTA Spectrum -->
+      <section class="visuals-section">
+        <div class="visual-card history-card">
+          <div class="visual-header">
+            <h3>SPL HISTORY OVER TIME</h3>
+            <div class="legend-row">
+              <span class="legend-item"><span class="dot dot-las"></span> LA Slow</span>
+              <span class="legend-item"><span class="dot dot-lcs"></span> LC Slow</span>
+              <span class="legend-item"><span class="dot dot-ca"></span> C &minus; A</span>
+              <select id="graphTimeSelect" class="select-input select-compact">
+                <option value="60">60 Seconds</option>
+                <option value="300" selected>5 Minutes</option>
+                <option value="900">15 Minutes</option>
+              </select>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="historyCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="visual-card rta-card">
+          <div class="visual-header">
+            <h3>1/3-OCTAVE RTA SPECTRUM (20Hz &minus; 20kHz)</h3>
+            <span class="rta-tag">ROOM ACOUSTIC FREQUENCY RESPONSE</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="rtaCanvas"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Bar: CSV Logger Status & Footer -->
+    <footer class="bottom-bar">
+      <div class="log-status-strip">
+        <div class="log-indicator">
+          <span class="status-pulse" id="logPulse"></span>
+          <span id="logStatusText">CSV LOGGER: IDLE</span>
+        </div>
+        <div class="log-details" id="logDetails">
+          <span id="logRecordCount">0 records</span>
+          <span class="divider">&bull;</span>
+          <span id="logDuration">00:00:00</span>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <button id="btnOpenLogFolder" class="footer-btn">Reveal Logs in Finder</button>
+        <button id="btnConfigureLogger" class="footer-btn">Logger Settings</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MODAL 1: Calibration & Reference Matching -->
+  <div class="modal-backdrop" id="modalCal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>MICROPHONE & REFERENCE CALIBRATION</h3>
+        <button class="modal-close" data-close="modalCal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Section A: Calibrate to Reference Meter -->
+        <div class="cal-section">
+          <h4>1. MATCH SPL TO CALIBRATED REFERENCE METER</h4>
+          <p class="cal-guide">
+            Place your measurement mic alongside your calibrated reference sound meter in the room (or attach a 94dB/114dB calibrator). Enter the reading from your reference meter below to automatically match calibration.
+          </p>
+          <div class="cal-matching-box">
+            <div class="cal-live-reading">
+              <span class="cal-label">CURRENT MEASURED L_AS:</span>
+              <span class="cal-value" id="calCurrentLAS">--.- dBA</span>
+            </div>
+            <div class="cal-input-group">
+              <label for="calTargetInput">TARGET REFERENCE SPL (dBA):</label>
+              <div class="input-with-button">
+                <input type="number" id="calTargetInput" step="0.1" value="85.0" min="30" max="140">
+                <button id="btnMatchReference" class="btn-primary">CALIBRATE TO TARGET</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="manual-offset-group">
+            <label>MANUAL CALIBRATION OFFSET (dB):</label>
+            <div class="nudge-controls">
+              <button id="btnOffsetMinus1" class="nudge-btn">-1.0</button>
+              <button id="btnOffsetMinus01" class="nudge-btn">-0.1</button>
+              <input type="number" id="manualOffsetInput" step="0.1" value="100.0">
+              <button id="btnOffsetPlus01" class="nudge-btn">+0.1</button>
+              <button id="btnOffsetPlus1" class="nudge-btn">+1.0</button>
+            </div>
+            <span class="hint">Adjusts digital full-scale sensitivity to physical dB SPL</span>
+          </div>
+        </div>
+
+        <!-- Section B: Mic Frequency Response File (.cal / .txt) -->
+        <div class="cal-section">
+          <h4>2. MICROPHONE CALIBRATION FILE (.CAL / .TXT)</h4>
+          <p class="cal-guide">
+            Load Dayton Audio (UMM-6, EMM-6), miniDSP (UMIK-1 0°/90°), Sonarworks, or REW text calibration files to compensate for your mic's frequency curve.
+          </p>
+          <div class="cal-file-box">
+            <div class="cal-file-info">
+              <span class="file-name" id="calFileName">No calibration file loaded</span>
+              <span class="file-meta" id="calFileMeta">Flat uncorrected response</span>
+            </div>
+            <div class="file-actions">
+              <button id="btnLoadCalFile" class="btn-secondary">BROWSE FILE...</button>
+              <button id="btnClearCalFile" class="btn-sm btn-danger" style="display: none;">REMOVE</button>
+            </div>
+          </div>
+          <div class="cal-curve-preview" id="calCurveContainer" style="display: none;">
+            <canvas id="calCurveCanvas" width="480" height="120"></canvas>
+            <div class="cal-toggle-row">
+              <label class="toggle-switch">
+                <input type="checkbox" id="calEnabledCheckbox" checked>
+                <span class="slider"></span>
+              </label>
+              <span>Enable Frequency Compensation Filter</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" data-close="modalCal">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Color Ranges & Custom Thresholds -->
+  <div class="modal-backdrop" id="modalThresholds">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>COLOR RANGES & THRESHOLDS</h3>
+        <button class="modal-close" data-close="modalThresholds">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="preset-row">
+          <label for="threshPresetSelect">LOAD PRESET:</label>
+          <select id="threshPresetSelect" class="select-input">
+            <option value="foh">Live Sound / FOH Concert (65 - 85 - 98 dBA)</option>
+            <option value="osha">OSHA / Workplace Noise (60 - 80 - 85 dBA)</option>
+            <option value="studio">Studio Control Room (55 - 75 - 85 dBA)</option>
+            <option value="club">Club & Electronic Music (70 - 95 - 102 dBA)</option>
+            <option value="custom" selected>Custom Configuration</option>
+          </select>
+        </div>
+
+        <!-- SPL Level Thresholds -->
+        <div class="thresh-card">
+          <h4>SOUND PRESSURE LEVEL (SPL) COLOR ZONES</h4>
+          <p class="cal-guide">Changes the color tinting of the digital readouts and level bars:</p>
+
+          <div class="color-zone-row zone-gray">
+            <div class="color-chip chip-gray"></div>
+            <div class="zone-details">
+              <span class="zone-name">GRAY (TOO LOW / AMBIENT)</span>
+              <span class="zone-rule">Levels below</span>
+            </div>
+            <input type="number" id="thSplLow" class="thresh-input" step="0.5" value="60.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-green">
+            <div class="color-chip chip-green"></div>
+            <div class="zone-details">
+              <span class="zone-name">GREEN (GOOD / TARGET)</span>
+              <span class="zone-rule">From Low up to</span>
+            </div>
+            <input type="number" id="thSplWarn" class="thresh-input" step="0.5" value="85.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-yellow">
+            <div class="color-chip chip-yellow"></div>
+            <div class="zone-details">
+              <span class="zone-name">YELLOW (WARNING / MONITOR)</span>
+              <span class="zone-rule">From Good up to</span>
+            </div>
+            <input type="number" id="thSplAlert" class="thresh-input" step="0.5" value="95.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-red">
+            <div class="color-chip chip-red"></div>
+            <div class="zone-details">
+              <span class="zone-name">RED (VERY HIGH LEVEL / ALERT)</span>
+              <span class="zone-rule">Levels at or exceeding Warning</span>
+            </div>
+            <span class="red-bound">&ge; Alert Limit</span>
+          </div>
+        </div>
+
+        <!-- C - A Thresholds -->
+        <div class="thresh-card">
+          <h4>LIVE C &minus; A COLOR ZONES</h4>
+          <p class="cal-guide">Thresholds for sub-bass low frequency energy balance:</p>
+
+          <div class="color-zone-row zone-gray">
+            <div class="color-chip chip-gray"></div>
+            <div class="zone-details">
+              <span class="zone-name">GRAY (LEAN / HIGH-PASS)</span>
+              <span class="zone-rule">Below</span>
+            </div>
+            <input type="number" id="thCaLow" class="thresh-input" step="0.5" value="4.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-green">
+            <div class="color-chip chip-green"></div>
+            <div class="zone-details">
+              <span class="zone-name">GREEN (BALANCED LOWS)</span>
+              <span class="zone-rule">Up to</span>
+            </div>
+            <input type="number" id="thCaWarn" class="thresh-input" step="0.5" value="12.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-yellow">
+            <div class="color-chip chip-yellow"></div>
+            <div class="zone-details">
+              <span class="zone-name">YELLOW (HEAVY BASS)</span>
+              <span class="zone-rule">Up to</span>
+            </div>
+            <input type="number" id="thCaAlert" class="thresh-input" step="0.5" value="18.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-red">
+            <div class="color-chip chip-red"></div>
+            <div class="zone-details">
+              <span class="zone-name">RED (EXCESSIVE SUB-BASS)</span>
+              <span class="zone-rule">&ge; 18.0 dB (Rumble limit)</span>
+            </div>
+            <span class="red-bound">&ge; Alert Limit</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnSaveThresholds" class="btn-primary" data-close="modalThresholds">APPLY & SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CSV Logger Configuration -->
+  <div class="modal-backdrop" id="modalLogger">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>CSV LOGGING SETTINGS</h3>
+        <button class="modal-close" data-close="modalLogger">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="control-group">
+          <label for="logIntervalSelect">LOGGING INTERVAL:</label>
+          <select id="logIntervalSelect" class="select-input">
+            <option value="100">100 milliseconds (10 Hz High-Speed)</option>
+            <option value="500">500 milliseconds (2 Hz)</option>
+            <option value="1000" selected>1 Second (Standard Leq1s Log)</option>
+            <option value="5000">5 Seconds</option>
+            <option value="10000">10 Seconds</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>LOG DESTINATION FOLDER:</label>
+          <div class="input-with-button">
+            <input type="text" id="logDirectoryInput" readonly>
+            <button id="btnBrowseLogFolder" class="btn-secondary">CHANGE...</button>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h4>COLUMNS LOGGED TO CSV:</h4>
+          <p>
+            <code>Timestamp_ISO</code>, <code>Time_Local</code>, <code>Elapsed_Sec</code>,
+            <code>LA_Fast</code>, <code>LA_Slow</code>, <code>LA_eq</code>,
+            <code>LC_Fast</code>, <code>LC_Slow</code>, <code>LC_eq</code>,
+            <code>LZ_Fast</code>, <code>LZ_Slow</code>, <code>LZ_eq</code>,
+            <code>C_minus_A</code>, <code>LC_Peak</code>, <code>LZ_Peak</code>,
+            <code>Offset_dB</code>, <code>Cal_File</code>
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" data-close="modalLogger">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

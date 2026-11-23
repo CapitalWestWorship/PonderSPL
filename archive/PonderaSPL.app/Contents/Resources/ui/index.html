@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pondera SPL</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M17 5v14M7 9v6M22 8v8M2 11v2"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>PONDERA <span>SPL</span></h1>
+          <span class="subtext">IEC 61672-1 CLASS 1 ACOUSTIC SPEC</span>
+        </div>
+      </div>
+
+      <div class="device-selectors">
+        <div class="control-group">
+          <label for="deviceSelect">INPUT AUDIO DEVICE</label>
+          <select id="deviceSelect" class="select-input"></select>
+        </div>
+
+        <div class="control-group">
+          <label for="channelSelect">CHANNEL</label>
+          <select id="channelSelect" class="select-input">
+            <option value="0">Channel 1 (Left)</option>
+            <option value="1">Channel 2 (Right)</option>
+            <option value="-1">Mono Sum (All)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <!-- Breakout HUD Button -->
+        <button id="btnOpenHUD" class="btn-highlight" title="Open Separate Breakout HUD Window">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="9" y1="3" x2="9" y2="21"/>
+          </svg>
+          BREAKOUT HUD
+        </button>
+
+        <!-- Calendar / Scheduled Logging Button -->
+        <button id="btnOpenSchedule" class="pill-btn" title="Automated Calendar Logging Schedules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:3px;">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="pill-label">SCHEDULE</span>
+          <span id="topScheduleStatus" class="pill-value status-dim">AUTO</span>
+        </button>
+
+        <!-- Offset Display & Trigger -->
+        <button id="btnOpenCal" class="pill-btn" title="Microphone & Reference Calibration">
+          <span class="pill-label">OFFSET</span>
+          <span id="topOffsetVal" class="pill-value">+100.0 dB</span>
+        </button>
+
+        <!-- Color Thresholds -->
+        <button id="btnOpenThresholds" class="icon-btn" title="Color Ranges & Thresholds">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+
+        <!-- CSV / TXT Logging Quick Button -->
+        <button id="btnToggleLogging" class="record-btn" title="Start/Stop Logging">
+          <span class="rec-dot"></span>
+          <span id="recText">REC LOG</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <!-- Top Modular Hero Meter Cards -->
+      <section class="hero-meters">
+        <!-- Modular Hero Tile 1 (Default: LA Slow / Leq) -->
+        <div class="meter-card master-card" id="cardHero1">
+          <div class="card-header">
+            <div class="tile-config-row">
+              <span class="card-title">PRIMARY TILE 1</span>
+              <div class="select-pair">
+                <select id="hero1Metric" class="metric-select">
+                  <option value="LA" selected>A-Weighted (dBA)</option>
+                  <option value="LC">C-Weighted (dBC)</option>
+                  <option value="LZ">Z-Weighted (dBZ)</option>
+                  <option value="CA">C - A (Live Delta)</option>
+                  <option value="LCpk">Peak LCpk (dBC)</option>
+                </select>
+                <select id="hero1Window" class="metric-select select-compact">
+                  <option value="slow" selected>Slow (1000ms)</option>
+                  <option value="fast">Fast (125ms)</option>
+                  <option value="1s">Leq 1s</option>
+                  <option value="5s">Leq 5s</option>
+                  <option value="10s">Leq 10s</option>
+                  <option value="30s">Leq 30s</option>
+                  <option value="1m">Leq 1m</option>
+                  <option value="5m">Leq 5m</option>
+                  <option value="10m">Leq 10m</option>
+                  <option value="15m">Leq 15m</option>
+                  <option value="total">Leq Total</option>
+                </select>
+              </div>
+            </div>
+            <div class="badge-row">
+              <span class="badge badge-unit" id="hero1UnitBadge">dBA</span>
+            </div>
+          </div>
+
+          <div class="digital-display" id="hero1Display">
+            <span class="number" id="hero1Num">--.-</span>
+            <span class="unit" id="hero1Unit">dBA</span>
+          </div>
+
+          <!-- Color Level Bar -->
+          <div class="level-bar-track">
+            <div class="level-bar-fill" id="hero1BarFill"></div>
+            <div class="bar-markers">
+              <span style="left: 0%">40</span>
+              <span style="left: 25%">60</span>
+              <span style="left: 56%">85</span>
+              <span style="left: 69%">95</span>
+              <span style="left: 81%">105</span>
+              <span style="left: 100%">120</span>
+            </div>
+          </div>
+
+          <div class="card-footer-stats">
+            <div class="stat-item">
+              <span class="stat-lbl">MAX</span>
+              <span class="stat-val" id="hero1Max">--.-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">MIN</span>
+              <span class="stat-val" id="hero1Min">--.-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">WINDOW</span>
+              <span class="stat-val" id="hero1WindowText">SLOW</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modular Hero Tile 2 (Default: Live C - A, but fully switchable!) -->
+        <div class="meter-card c-minus-a-card" id="cardHero2">
+          <div class="card-header">
+            <div class="tile-config-row">
+              <span class="card-title">PRIMARY TILE 2</span>
+              <div class="select-pair">
+                <select id="hero2Metric" class="metric-select">
+                  <option value="CA" selected>C - A (Live Delta)</option>
+                  <option value="LA">A-Weighted (dBA)</option>
+                  <option value="LC">C-Weighted (dBC)</option>
+                  <option value="LZ">Z-Weighted (dBZ)</option>
+                  <option value="LCpk">Peak LCpk (dBC)</option>
+                </select>
+                <select id="hero2Window" class="metric-select select-compact">
+                  <option value="slow" selected>Slow (Lcs - Las)</option>
+                  <option value="fast">Fast (Lcf - Laf)</option>
+                  <option value="1m">Leq 1m Delta</option>
+                  <option value="5m">Leq 5m Delta</option>
+                  <option value="15m">Leq 15m Delta</option>
+                </select>
+              </div>
+            </div>
+            <div class="badge-row">
+              <span class="badge" id="hero2Badge">DELTA</span>
+            </div>
+          </div>
+
+          <div class="digital-display ca-display" id="hero2Display">
+            <span class="number" id="hero2Num">--.-</span>
+            <span class="unit" id="hero2Unit">dB</span>
+          </div>
+
+          <!-- Dynamic LF Balance / Bar Track -->
+          <div class="ca-balance-container" id="hero2BalanceContainer">
+            <div class="ca-balance-track">
+              <div class="ca-indicator" id="hero2Indicator"></div>
+            </div>
+            <div class="ca-zone-labels">
+              <span>LEAN &lt;4</span>
+              <span>BALANCED 4-12</span>
+              <span>HEAVY BASS 12-18</span>
+              <span>EXCESSIVE &gt;18</span>
+            </div>
+          </div>
+
+          <div class="ca-status-bar">
+            <span class="ca-desc" id="hero2Description">Awaiting audio...</span>
+            <span class="ca-subtext" id="hero2Subtext">Live delta: C-weight sub energy vs A-weight rolloff</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Matrix Section: Simultaneous Multi-Window Leq Readings -->
+      <section class="matrix-section">
+        <div class="section-header">
+          <h2>SIMULTANEOUS MEASUREMENTS & MULTI-WINDOW LEQ</h2>
+          <div class="leq-controls">
+            <button id="btnResetStats" class="btn-sm" title="Reset Leq, Peak, Min/Max">RESET STATS</button>
+          </div>
+        </div>
+
+        <div class="matrix-grid">
+          <!-- A-Weighting Column -->
+          <div class="matrix-card" id="colA">
+            <div class="matrix-col-header">
+              <span class="col-title">A-WEIGHTED (dBA)</span>
+              <span class="col-sub">IEC Human Auditory Response</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">FAST (125ms)</span>
+              <span class="row-value" id="valLAF">--.-</span>
+            </div>
+            <div class="metric-row highlight">
+              <span class="row-label">SLOW (1000ms)</span>
+              <span class="row-value" id="valLAS">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Aeq (1s)</span>
+              <span class="row-value" id="valLAeq1s">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Aeq (1m)</span>
+              <span class="row-value" id="valLAeq1m">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Aeq (15m)</span>
+              <span class="row-value" id="valLAeq15m">--.-</span>
+            </div>
+            <div class="metric-row sub-row">
+              <span class="row-label">MAX / MIN</span>
+              <span class="row-value-dual"><span id="valLAmax">--.-</span> / <span id="valLAmin">--.-</span></span>
+            </div>
+          </div>
+
+          <!-- C-Weighting Column -->
+          <div class="matrix-card" id="colC">
+            <div class="matrix-col-header">
+              <span class="col-title">C-WEIGHTED (dBC)</span>
+              <span class="col-sub">Acoustic Power & Sub-Bass Response</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">FAST (125ms)</span>
+              <span class="row-value" id="valLCF">--.-</span>
+            </div>
+            <div class="metric-row highlight">
+              <span class="row-label">SLOW (1000ms)</span>
+              <span class="row-value" id="valLCS">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Ceq (1s)</span>
+              <span class="row-value" id="valLCeq1s">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Ceq (1m)</span>
+              <span class="row-value" id="valLCeq1m">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Ceq (15m)</span>
+              <span class="row-value" id="valLCeq15m">--.-</span>
+            </div>
+            <div class="metric-row sub-row">
+              <span class="row-label">PEAK (LCpk)</span>
+              <span class="row-value" id="valLCpeak">--.-</span>
+            </div>
+          </div>
+
+          <!-- Z-Weighting Column -->
+          <div class="matrix-card" id="colZ">
+            <div class="matrix-col-header">
+              <span class="col-title">Z-WEIGHTED (dBZ)</span>
+              <span class="col-sub">Flat 10Hz &minus; 20kHz Linear Spectrum</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">FAST (125ms)</span>
+              <span class="row-value" id="valLZF">--.-</span>
+            </div>
+            <div class="metric-row highlight">
+              <span class="row-label">SLOW (1000ms)</span>
+              <span class="row-value" id="valLZS">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Zeq (1s)</span>
+              <span class="row-value" id="valLZeq1s">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Zeq (1m)</span>
+              <span class="row-value" id="valLZeq1m">--.-</span>
+            </div>
+            <div class="metric-row">
+              <span class="row-label">L_Zeq (15m)</span>
+              <span class="row-value" id="valLZeq15m">--.-</span>
+            </div>
+            <div class="metric-row sub-row">
+              <span class="row-label">PEAK (LZpk)</span>
+              <span class="row-value" id="valLZpeak">--.-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Visuals: Strip Chart & 1/3 Octave RTA -->
+      <section class="visuals-section">
+        <div class="visual-card history-card">
+          <div class="visual-header">
+            <h3>SPL HISTORY OVER TIME</h3>
+            <div class="legend-row">
+              <span class="legend-item"><span class="dot dot-las"></span> LA Slow</span>
+              <span class="legend-item"><span class="dot dot-lcs"></span> LC Slow</span>
+              <span class="legend-item"><span class="dot dot-ca"></span> C &minus; A</span>
+              <select id="graphTimeSelect" class="select-input select-compact">
+                <option value="60">60 Seconds</option>
+                <option value="300" selected>5 Minutes</option>
+                <option value="900">15 Minutes</option>
+              </select>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="historyCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="visual-card rta-card">
+          <div class="visual-header">
+            <h3>1/3-OCTAVE RTA SPECTRUM (20Hz &minus; 20kHz)</h3>
+            <span class="rta-tag">ROOM ACOUSTIC FREQUENCY RESPONSE</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="rtaCanvas"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Bar -->
+    <footer class="bottom-bar">
+      <div class="log-status-strip">
+        <div class="log-indicator">
+          <span class="status-pulse" id="logPulse"></span>
+          <span id="logStatusText">LOGGER: IDLE</span>
+        </div>
+        <div class="log-details" id="logDetails">
+          <span id="logFormatBadge" class="format-badge">CSV</span>
+          <span id="logRecordCount">0 records</span>
+          <span class="divider">&bull;</span>
+          <span id="logDuration">00:00:00</span>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <button id="btnOpenLogFolder" class="footer-btn">Reveal Logs in Finder</button>
+        <button id="btnConfigureLogger" class="footer-btn">Logger Settings</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MODAL: Calendar & Scheduled Logging -->
+  <div class="modal-backdrop" id="modalSchedule">
+    <div class="modal-dialog modal-wide">
+      <div class="modal-header">
+        <h3>AUTOMATED CALENDAR & SCHEDULED LOGGING</h3>
+        <button class="modal-close" data-close="modalSchedule">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="cal-guide">
+          Schedule logging runs to start and stop automatically (e.g. Sunday Morning Service, concert runs, or environmental noise compliance).
+        </p>
+
+        <!-- Scheduled Sessions List -->
+        <div class="schedule-list-container" id="scheduleListContainer"></div>
+
+        <div class="add-event-box">
+          <h4>+ ADD SCHEDULED LOGGING EVENT</h4>
+          <div class="form-grid">
+            <div class="control-group">
+              <label for="schedName">EVENT NAME:</label>
+              <input type="text" id="schedName" class="text-input" placeholder="e.g. Sunday Morning Service">
+            </div>
+
+            <div class="control-group">
+              <label for="schedRecurrence">RECURRENCE:</label>
+              <select id="schedRecurrence" class="select-input">
+                <option value="weekly" selected>Weekly (Recurring Day)</option>
+                <option value="one-off">One-Off (Specific Calendar Date)</option>
+                <option value="daily">Daily (Every Day)</option>
+              </select>
+            </div>
+
+            <div class="control-group" id="groupSchedDate" style="display: none;">
+              <label for="schedDate">EVENT DATE:</label>
+              <input type="date" id="schedDate" class="text-input">
+            </div>
+
+            <div class="control-group" id="groupSchedDays">
+              <label>REPEAT ON DAYS:</label>
+              <div class="days-checkbox-row">
+                <label><input type="checkbox" name="schedDay" value="0" checked> Sun</label>
+                <label><input type="checkbox" name="schedDay" value="1"> Mon</label>
+                <label><input type="checkbox" name="schedDay" value="2"> Tue</label>
+                <label><input type="checkbox" name="schedDay" value="3"> Wed</label>
+                <label><input type="checkbox" name="schedDay" value="4"> Thu</label>
+                <label><input type="checkbox" name="schedDay" value="5"> Fri</label>
+                <label><input type="checkbox" name="schedDay" value="6"> Sat</label>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="schedStartTime">START TIME:</label>
+              <input type="time" id="schedStartTime" class="text-input" value="08:30">
+            </div>
+
+            <div class="control-group">
+              <label for="schedEndTime">END TIME:</label>
+              <input type="time" id="schedEndTime" class="text-input" value="12:30">
+            </div>
+
+            <div class="control-group">
+              <label for="schedInterval">LOGGING RATE:</label>
+              <select id="schedInterval" class="select-input">
+                <option value="1000">1 Second</option>
+                <option value="3000" selected>3 Seconds (Recommended)</option>
+                <option value="5000">5 Seconds</option>
+                <option value="10000">10 Seconds</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="schedFormat">FORMAT:</label>
+              <select id="schedFormat" class="select-input">
+                <option value="csv" selected>CSV (.csv Spreadsheet)</option>
+                <option value="txt">Text (.txt Smaart Tab-Delimited)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sleep-option-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="schedPreventSleep">
+              <span class="slider"></span>
+            </label>
+            <span>Prevent Mac from sleeping during this scheduled session</span>
+          </div>
+
+          <button id="btnAddScheduleEvent" class="btn-primary" style="align-self: flex-start; margin-top: 8px;">SAVE TO SCHEDULE</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" data-close="modalSchedule">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Calibration & Reference Matching -->
+  <div class="modal-backdrop" id="modalCal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>MICROPHONE & REFERENCE CALIBRATION</h3>
+        <button class="modal-close" data-close="modalCal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="cal-section">
+          <h4>1. MATCH SPL TO CALIBRATED REFERENCE METER</h4>
+          <p class="cal-guide">
+            Place your measurement mic alongside your reference meter in the room (or connect a 94dB/114dB calibrator). Enter the reference meter's reading to calibrate.
+          </p>
+          <div class="cal-matching-box">
+            <div class="cal-live-reading">
+              <span class="cal-label">CURRENT MEASURED L_AS:</span>
+              <span class="cal-value" id="calCurrentLAS">--.- dBA</span>
+            </div>
+            <div class="cal-input-group">
+              <label for="calTargetInput">TARGET REFERENCE SPL (dBA):</label>
+              <div class="input-with-button">
+                <input type="number" id="calTargetInput" step="0.1" value="85.0" min="30" max="140">
+                <button id="btnMatchReference" class="btn-primary">CALIBRATE TO TARGET</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="manual-offset-group">
+            <label>MANUAL CALIBRATION OFFSET (dB):</label>
+            <div class="nudge-controls">
+              <button id="btnOffsetMinus1" class="nudge-btn">-1.0</button>
+              <button id="btnOffsetMinus01" class="nudge-btn">-0.1</button>
+              <input type="number" id="manualOffsetInput" step="0.1" value="100.0">
+              <button id="btnOffsetPlus01" class="nudge-btn">+0.1</button>
+              <button id="btnOffsetPlus1" class="nudge-btn">+1.0</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="cal-section">
+          <h4>2. MICROPHONE CALIBRATION FILE (.CAL / .TXT)</h4>
+          <p class="cal-guide">
+            Load Dayton Audio (UMM-6, EMM-6), miniDSP (UMIK-1 0°/90°), Sonarworks, or REW text calibration files to compensate for mic frequency deviations.
+          </p>
+          <div class="cal-file-box">
+            <div class="cal-file-info">
+              <span class="file-name" id="calFileName">No calibration file loaded</span>
+              <span class="file-meta" id="calFileMeta">Flat uncorrected response</span>
+            </div>
+            <div class="file-actions">
+              <button id="btnLoadCalFile" class="btn-secondary">BROWSE FILE...</button>
+              <button id="btnClearCalFile" class="btn-sm btn-danger" style="display: none;">REMOVE</button>
+            </div>
+          </div>
+          <div class="cal-curve-preview" id="calCurveContainer" style="display: none;">
+            <canvas id="calCurveCanvas" width="480" height="120"></canvas>
+            <div class="cal-toggle-row">
+              <label class="toggle-switch">
+                <input type="checkbox" id="calEnabledCheckbox" checked>
+                <span class="slider"></span>
+              </label>
+              <span>Enable Frequency Compensation Filter</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" data-close="modalCal">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Color Ranges & Custom Thresholds -->
+  <div class="modal-backdrop" id="modalThresholds">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>COLOR RANGES & THRESHOLDS</h3>
+        <button class="modal-close" data-close="modalThresholds">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="preset-row">
+          <label for="threshPresetSelect">LOAD PRESET:</label>
+          <select id="threshPresetSelect" class="select-input">
+            <option value="foh">Live Sound / FOH Concert (65 - 85 - 98 dBA)</option>
+            <option value="osha">OSHA / Workplace Noise (60 - 80 - 85 dBA)</option>
+            <option value="studio">Studio Control Room (55 - 75 - 85 dBA)</option>
+            <option value="club">Club & Electronic Music (70 - 95 - 102 dBA)</option>
+            <option value="custom" selected>Custom Configuration</option>
+          </select>
+        </div>
+
+        <div class="thresh-card">
+          <h4>SOUND PRESSURE LEVEL (SPL) COLOR ZONES</h4>
+          <div class="color-zone-row zone-gray">
+            <div class="color-chip chip-gray"></div>
+            <div class="zone-details">
+              <span class="zone-name">GRAY (TOO LOW / AMBIENT)</span>
+              <span class="zone-rule">Levels below</span>
+            </div>
+            <input type="number" id="thSplLow" class="thresh-input" step="0.5" value="60.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-green">
+            <div class="color-chip chip-green"></div>
+            <div class="zone-details">
+              <span class="zone-name">GREEN (GOOD / TARGET)</span>
+              <span class="zone-rule">From Low up to</span>
+            </div>
+            <input type="number" id="thSplWarn" class="thresh-input" step="0.5" value="85.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-yellow">
+            <div class="color-chip chip-yellow"></div>
+            <div class="zone-details">
+              <span class="zone-name">YELLOW (WARNING / MONITOR)</span>
+              <span class="zone-rule">From Good up to</span>
+            </div>
+            <input type="number" id="thSplAlert" class="thresh-input" step="0.5" value="95.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-red">
+            <div class="color-chip chip-red"></div>
+            <div class="zone-details">
+              <span class="zone-name">RED (VERY HIGH LEVEL / ALERT)</span>
+              <span class="zone-rule">Levels at or exceeding Warning</span>
+            </div>
+            <span class="red-bound">&ge; Alert Limit</span>
+          </div>
+        </div>
+
+        <div class="thresh-card">
+          <h4>LIVE C &minus; A COLOR ZONES</h4>
+          <div class="color-zone-row zone-gray">
+            <div class="color-chip chip-gray"></div>
+            <div class="zone-details">
+              <span class="zone-name">GRAY (LEAN / HIGH-PASS)</span>
+              <span class="zone-rule">Below</span>
+            </div>
+            <input type="number" id="thCaLow" class="thresh-input" step="0.5" value="4.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-green">
+            <div class="color-chip chip-green"></div>
+            <div class="zone-details">
+              <span class="zone-name">GREEN (BALANCED LOWS)</span>
+              <span class="zone-rule">Up to</span>
+            </div>
+            <input type="number" id="thCaWarn" class="thresh-input" step="0.5" value="12.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-yellow">
+            <div class="color-chip chip-yellow"></div>
+            <div class="zone-details">
+              <span class="zone-name">YELLOW (HEAVY BASS)</span>
+              <span class="zone-rule">Up to</span>
+            </div>
+            <input type="number" id="thCaAlert" class="thresh-input" step="0.5" value="18.0">
+            <span class="unit">dB</span>
+          </div>
+
+          <div class="color-zone-row zone-red">
+            <div class="color-chip chip-red"></div>
+            <div class="zone-details">
+              <span class="zone-name">RED (EXCESSIVE SUB-BASS)</span>
+              <span class="zone-rule">&ge; 18.0 dB (Rumble limit)</span>
+            </div>
+            <span class="red-bound">&ge; Alert Limit</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnSaveThresholds" class="btn-primary" data-close="modalThresholds">APPLY & SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Logger Settings (CSV vs Smaart TXT, 3-Second Rate, Sleep Option) -->
+  <div class="modal-backdrop" id="modalLogger">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>LOGGING CONFIGURATION</h3>
+        <button class="modal-close" data-close="modalLogger">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="control-group">
+          <label for="logFormatSelect">LOG FILE FORMAT:</label>
+          <select id="logFormatSelect" class="select-input">
+            <option value="csv" selected>CSV (.csv) — Spreadsheet Ready (Excel / Numbers)</option>
+            <option value="txt">Text (.txt) — Smaart-Style Tab-Delimited</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="logIntervalSelect">SAMPLING INTERVAL:</label>
+          <select id="logIntervalSelect" class="select-input">
+            <option value="100">100 milliseconds (10 Hz High-Speed)</option>
+            <option value="500">500 milliseconds (2 Hz)</option>
+            <option value="1000">1 Second (Standard Fast)</option>
+            <option value="2000">2 Seconds</option>
+            <option value="3000" selected>3 Seconds (Recommended for Church & Concerts)</option>
+            <option value="5000">5 Seconds</option>
+            <option value="10000">10 Seconds</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>LOG DESTINATION FOLDER:</label>
+          <div class="input-with-button">
+            <input type="text" id="logDirectoryInput" readonly>
+            <button id="btnBrowseLogFolder" class="btn-secondary">CHANGE...</button>
+          </div>
+        </div>
+
+        <div class="sleep-option-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkManualPreventSleep">
+            <span class="slider"></span>
+          </label>
+          <span>Prevent Mac from sleeping while logging is actively recording</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" data-close="modalLogger">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

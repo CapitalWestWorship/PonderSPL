@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pondera SPL — Breakout HUD</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #2b3342;
+      --text: #f0f6fc;
+      --text-dim: #8b949e;
+      --zone-gray: #7d889b;
+      --zone-green: #10b981;
+      --zone-yellow: #f59e0b;
+      --zone-red: #ef4444;
+      --accent: #06b6d4;
+      --font-mono: "SF Mono", Menlo, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 8px;
+    }
+    .hud-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .hud-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rec-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-dim);
+      background: var(--card);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .rec-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+    .rec-active {
+      color: #fca5a5;
+      border-color: var(--zone-red);
+    }
+    .rec-active .rec-dot {
+      background: var(--zone-red);
+      box-shadow: 0 0 6px var(--zone-red);
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover { color: #fff; border-color: var(--accent); }
+    .btn-pin.active {
+      color: #fff;
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--accent);
+    }
+
+    .tile-grid {
+      flex: 1;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      overflow-y: auto;
+    }
+
+    .hud-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .tile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 2px 4px;
+      outline: none;
+      cursor: pointer;
+    }
+    .tile-val-container {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      padding: 4px 0;
+      font-family: var(--font-mono);
+      font-weight: 800;
+    }
+    .tile-num {
+      font-size: 44px;
+      line-height: 1;
+      letter-spacing: -1.5px;
+    }
+    .tile-unit {
+      font-size: 14px;
+      font-weight: 600;
+      margin-left: 6px;
+      color: var(--text-dim);
+    }
+    .tile-bar {
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 4px 0 2px 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .tile-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--zone-gray), var(--zone-green) 50%, var(--zone-yellow) 75%, var(--zone-red) 100%);
+      transition: width 0.08s linear;
+    }
+    .tile-sub {
+      font-size: 9.5px;
+      color: var(--text-dim);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .color-gray { color: var(--zone-gray) !important; text-shadow: 0 0 10px rgba(125,136,155,0.3); }
+    .color-green { color: var(--zone-green) !important; text-shadow: 0 0 15px rgba(16,185,129,0.4); }
+    .color-yellow { color: var(--zone-yellow) !important; text-shadow: 0 0 18px rgba(245,158,11,0.4); }
+    .color-red { color: var(--zone-red) !important; text-shadow: 0 0 22px rgba(239,68,68,0.5); }
+  </style>
+</head>
+<body>
+  <div class="hud-bar">
+    <div class="hud-title">
+      <span>PONDERA HUD</span>
+      <span class="rec-badge" id="hudRecBadge">
+        <span class="rec-dot"></span>
+        <span id="hudRecText">STANDBY</span>
+      </span>
+    </div>
+    <div class="hud-controls">
+      <button class="btn btn-pin" id="btnPin" title="Toggle Always on Top">📌 ALWAYS ON TOP</button>
+      <button class="btn" id="btnAddTile" title="Add another meter tile">+ TILE</button>
+      <button class="btn" id="btnRemoveTile" title="Remove last meter tile">&minus; TILE</button>
+    </div>
+  </div>
+
+  <div class="tile-grid" id="tileGrid"></div>
+
+  <script>
+    let isAlwaysOnTop = false;
+    let tiles = [
+      { metric: 'LA', window: 'slow' },
+      { metric: 'CA', window: 'slow' }
+    ];
+
+    let thresholds = {
+      splLow: 60, splWarn: 85, splAlert: 95,
+      caLow: 4, caWarn: 12, caAlert: 18
+    };
+
+    function postHUD(action, payload = {}) {
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ponderaHUD) {
+        window.webkit.messageHandlers.ponderaHUD.postMessage({ action, ...payload });
+      }
+    }
+
+    window.onInitialHUDState = function(data) {
+      if (data.alwaysOnTop !== undefined) {
+        isAlwaysOnTop = data.alwaysOnTop;
+        updatePinButton();
+      }
+      if (data.tiles && data.tiles.length > 0) {
+        tiles = data.tiles;
+      }
+      if (data.thresholds) {
+        Object.assign(thresholds, data.thresholds);
+      }
+      renderTiles();
+    };
+
+    function updatePinButton() {
+      const btn = document.getElementById('btnPin');
+      if (isAlwaysOnTop) {
+        btn.classList.add('active');
+        btn.textContent = '📌 PINNED ON TOP';
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = '📌 FLOAT ON TOP';
+      }
+    }
+
+    document.getElementById('btnPin').addEventListener('click', () => {
+      isAlwaysOnTop = !isAlwaysOnTop;
+      updatePinButton();
+      postHUD('toggleAlwaysOnTop', { floating: isAlwaysOnTop });
+    });
+
+    document.getElementById('btnAddTile').addEventListener('click', () => {
+      if (tiles.length < 6) {
+        tiles.push({ metric: 'LA', window: '1m' });
+        saveAndRender();
+      }
+    });
+
+    document.getElementById('btnRemoveTile').addEventListener('click', () => {
+      if (tiles.length > 1) {
+        tiles.pop();
+        saveAndRender();
+      }
+    });
+
+    function saveAndRender() {
+      postHUD('saveHUDTiles', { tiles });
+      renderTiles();
+    }
+
+    const METRIC_OPTIONS = [
+      { id: 'LA', label: 'A-Weight (dBA)' },
+      { id: 'LC', label: 'C-Weight (dBC)' },
+      { id: 'LZ', label: 'Z-Weight Flat (dBZ)' },
+      { id: 'CA', label: 'Live C - A (Delta)' },
+      { id: 'LCpk', label: 'Peak LCpk' }
+    ];
+
+    function getWindowsForMetric(m) {
+      if (m === 'CA') {
+        return [
+          { id: 'slow', label: 'Slow (Lcs - Las)' },
+          { id: 'fast', label: 'Fast (Lcf - Laf)' },
+          { id: '1m', label: 'Leq 1m Delta' },
+          { id: '5m', label: 'Leq 5m Delta' },
+          { id: '15m', label: 'Leq 15m Delta' }
+        ];
+      }
+      if (m === 'LCpk') {
+        return [{ id: 'inst', label: 'Instant Peak' }];
+      }
+      return [
+        { id: 'slow', label: 'Slow (1000ms)' },
+        { id: 'fast', label: 'Fast (125ms)' },
+        { id: '1s', label: 'Leq 1s' },
+        { id: '5s', label: 'Leq 5s' },
+        { id: '10s', label: 'Leq 10s' },
+        { id: '30s', label: 'Leq 30s' },
+        { id: '1m', label: 'Leq 1m' },
+        { id: '5m', label: 'Leq 5m' },
+        { id: '10m', label: 'Leq 10m' },
+        { id: '15m', label: 'Leq 15m' },
+        { id: 'total', label: 'Leq Cumulative' }
+      ];
+    }
+
+    function renderTiles() {
+      const grid = document.getElementById('tileGrid');
+      grid.innerHTML = '';
+
+      tiles.forEach((t, i) => {
+        const card = document.createElement('div');
+        card.className = 'hud-tile';
+        card.id = `tile_${i}`;
+
+        const header = document.createElement('div');
+        header.className = 'tile-header';
+
+        const metricSel = document.createElement('select');
+        METRIC_OPTIONS.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt.id;
+          o.textContent = opt.label;
+          if (opt.id === t.metric) o.selected = true;
+          metricSel.appendChild(o);
+        });
+
+        const winSel = document.createElement('select');
+        function populateWinSel() {
+          winSel.innerHTML = '';
+          const wins = getWindowsForMetric(t.metric);
+          wins.forEach(w => {
+            const o = document.createElement('option');
+            o.value = w.id;
+            o.textContent = w.label;
+            if (w.id === t.window) o.selected = true;
+            winSel.appendChild(o);
+          });
+        }
+        populateWinSel();
+
+        metricSel.addEventListener('change', () => {
+          t.metric = metricSel.value;
+          t.window = (t.metric === 'CA') ? 'slow' : 'slow';
+          populateWinSel();
+          postHUD('saveHUDTiles', { tiles });
+        });
+
+        winSel.addEventListener('change', () => {
+          t.window = winSel.value;
+          postHUD('saveHUDTiles', { tiles });
+        });
+
+        header.appendChild(metricSel);
+        header.appendChild(winSel);
+
+        const valCont = document.createElement('div');
+        valCont.className = 'tile-val-container';
+        valCont.innerHTML = `<span class="tile-num" id="val_${i}">--.-</span><span class="tile-unit" id="unit_${i}">dB</span>`;
+
+        const bar = document.createElement('div');
+        bar.className = 'tile-bar';
+        bar.innerHTML = `<div class="tile-bar-fill" id="bar_${i}"></div>`;
+
+        const sub = document.createElement('div');
+        sub.className = 'tile-sub';
+        sub.id = `sub_${i}`;
+        sub.textContent = 'Measuring...';
+
+        card.appendChild(header);
+        card.appendChild(valCont);
+        card.appendChild(bar);
+        card.appendChild(sub);
+        grid.appendChild(card);
+      });
+    }
+
+    function getColorClass(val, isCA) {
+      if (isCA) {
+        if (val < thresholds.caLow) return 'color-gray';
+        if (val < thresholds.caWarn) return 'color-green';
+        if (val < thresholds.caAlert) return 'color-yellow';
+        return 'color-red';
+      }
+      if (val < thresholds.splLow) return 'color-gray';
+      if (val < thresholds.splWarn) return 'color-green';
+      if (val < thresholds.splAlert) return 'color-yellow';
+      return 'color-red';
+    }
+
+    window.onHUDMetrics = function(m) {
+      // Rec status
+      const badge = document.getElementById('hudRecBadge');
+      const recTxt = document.getElementById('hudRecText');
+      if (m.isLogging) {
+        badge.className = 'rec-badge rec-active';
+        recTxt.textContent = m.isPaused ? 'REC PAUSED' : 'LOGGING';
+      } else {
+        badge.className = 'rec-badge';
+        recTxt.textContent = 'STANDBY';
+      }
+
+      tiles.forEach((t, i) => {
+        let val = 0;
+        let unit = 'dB';
+        let isCA = false;
+
+        if (t.metric === 'CA') {
+          isCA = true;
+          unit = 'DELTA';
+          if (t.window === 'fast') val = m.CminusA_Fast;
+          else if (t.window === '1m') val = m.CminusA_1m;
+          else if (t.window === '5m') val = m.CminusA_5m;
+          else if (t.window === '15m') val = m.CminusA_15m;
+          else val = m.CminusA;
+        } else if (t.metric === 'LCpk') {
+          val = m.LCpeak;
+          unit = 'dBC';
+        } else {
+          unit = (t.metric === 'LA') ? 'dBA' : (t.metric === 'LC' ? 'dBC' : 'dBZ');
+          if (t.window === 'slow') val = (t.metric === 'LA') ? m.LAS : (t.metric === 'LC' ? m.LCS : m.LZS);
+          else if (t.window === 'fast') val = (t.metric === 'LA') ? m.LAF : (t.metric === 'LC' ? m.LCF : m.LZF);
+          else {
+            const prop = `${t.metric}eq_${t.window}`;
+            val = m[prop] !== undefined ? m[prop] : m.LAS;
+          }
+        }
+
+        const numEl = document.getElementById(`val_${i}`);
+        const unitEl = document.getElementById(`unit_${i}`);
+        const barEl = document.getElementById(`bar_${i}`);
+        const subEl = document.getElementById(`sub_${i}`);
+
+        if (numEl) {
+          numEl.textContent = val > 0 || isCA ? (isCA && val >= 0 ? '+' : '') + val.toFixed(1) : '--.-';
+          numEl.className = 'tile-num ' + getColorClass(val, isCA);
+        }
+        if (unitEl) unitEl.textContent = unit;
+
+        if (barEl) {
+          let pct = isCA ? (val / 25.0) * 100.0 : ((val - 40.0) / 80.0) * 100.0;
+          pct = Math.max(0, Math.min(100, pct));
+          barEl.style.width = pct + '%';
+        }
+
+        if (subEl) {
+          if (isCA) {
+            if (val < thresholds.caLow) subEl.textContent = 'Lean Sub-bass (<4dB)';
+            else if (val < thresholds.caWarn) subEl.textContent = 'Balanced Lows (4-12dB)';
+            else if (val < thresholds.caAlert) subEl.textContent = 'Heavy Bass (12-18dB)';
+            else subEl.textContent = 'Excessive Rumble (>18dB)';
+          } else {
+            subEl.textContent = `${t.metric} (${t.window.toUpperCase()})`;
+          }
+        }
+      });
+    };
+
+    postHUD('getHUDState');
+  </script>
+</body>
+</html>
